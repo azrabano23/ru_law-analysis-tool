@@ -1,6 +1,6 @@
-# CSRR Analysis Tool
+# RU Law Analysis Tool
 
-This repository contains the Python script used to analyze and generate reports of publications by faculty affiliates of the Center for the Study of Racism and Resistance (CSRR) for May 2024.
+This repository contains the Python script used to analyze and generate reports of publications by faculty affiliates of Rutgers Law for May 2024.
 
 ## Overview
 
