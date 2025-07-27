@@ -172,7 +172,7 @@ class CSRRMediaSearcher:
         return False
     
     def search_with_validation(self, query: str, faculty_name: str, max_results: int = 3) -> List[Dict]:
-        """Search with strict validation"""
+        """Search with strict validation but include ALL sources"""
         try:
             # Add time filter for recent results
             search_query = f"{query} after:2024-06-01"
@@ -200,10 +200,15 @@ class CSRRMediaSearcher:
                 snippet_elem = result.find('p')
                 snippet = snippet_elem.get_text(strip=True) if snippet_elem else ''
                 
-                # Only process trusted sources
+                # Get source name (include ALL sources now)
                 is_trusted, source_name = self.is_trusted_source(link)
                 if not is_trusted:
-                    continue
+                    # Extract source from URL for unknown sources
+                    try:
+                        domain = urllib.parse.urlparse(link).netloc
+                        source_name = domain.replace('www.', '').replace('.com', '').replace('.org', '').replace('.net', '').title()
+                    except:
+                        source_name = "Unknown"
                 
                 # Strict validation: faculty member must actually be mentioned
                 if not self.validate_faculty_mention(faculty_name, title, snippet, link):

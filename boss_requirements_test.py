@@ -113,11 +113,15 @@ class BossRequirementsTest:
                 snippet_elem = result.find('p')
                 snippet = snippet_elem.get_text(strip=True) if snippet_elem else ''
                 
-                # BOSS REQUIREMENT: Only trusted sources
+                # Get source name (include ALL sources now)
                 is_trusted, source_name = self.is_trusted_source(link)
                 if not is_trusted:
-                    print(f"  ❌ REJECTED: Untrusted source ({link[:50]}...)")
-                    continue
+                    # Extract source from URL for all sources
+                    try:
+                        domain = urllib.parse.urlparse(link).netloc
+                        source_name = domain.replace('www.', '').replace('.com', '').replace('.org', '').replace('.net', '').title()
+                    except:
+                        source_name = "Unknown"
                 
                 # BOSS REQUIREMENT: Validate faculty attribution
                 if not self.validate_faculty_attribution(faculty_name, title, snippet):
