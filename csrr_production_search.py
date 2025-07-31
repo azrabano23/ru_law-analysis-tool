@@ -318,111 +318,141 @@ class CSRRMediaSearcher:
             return False
 
     def search_with_web_scraping(self, faculty_name: str) -> List[Dict]:
-        """Search using direct web scraping for recent articles"""
+        """Enhanced web scraping to search the entire web for recent articles"""
         print(f"🔍 Web Searching: {faculty_name}")
-        
-        search_engines = [
-            "https://www.google.com/search",
-            "https://www.bing.com/search",
-            "https://search.yahoo.com/search"
-        ]
         
         all_results = []
         
-        # Try multiple search queries for better coverage
+        # Comprehensive search queries for better coverage
         search_queries = [
-            f'"{faculty_name}" op-ed 2025',
-            f'"{faculty_name}" opinion article June July 2025',
-            f'{faculty_name} interview 2025',
-            f'{faculty_name} Gaza Palestine commentary 2025'
+            f'"{faculty_name}" article 2025',
+            f'"{faculty_name}" op-ed opinion 2025',
+            f'"{faculty_name}" Gaza Palestine Israel 2025',
+            f'"{faculty_name}" interview podcast 2025',
+            f'"{faculty_name}" commentary analysis 2025',
+            f'{faculty_name} writes published 2025'
         ]
         
-        for query in search_queries[:2]:  # Limit to 2 queries to avoid overwhelming
-            try:
-                # Use Google search with date filter
-                params = {
-                    'q': f'{query} after:2025-05-31 before:2025-08-01',
-                    'num': 5
-                }
-                
-                url = f"https://www.google.com/search?q={urllib.parse.quote(params['q'])}&num={params['num']}"
-                
-                headers = {
-                    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                    'Accept-Language': 'en-US,en;q=0.5',
-                    'Accept-Encoding': 'gzip, deflate',
-                    'Connection': 'keep-alive',
-                }
-                
-                response = requests.get(url, headers=headers, timeout=10)
-                soup = BeautifulSoup(response.content, 'html.parser')
-                
-                # Parse Google search results
-                search_results = soup.find_all('div', class_='g')
-                
-                for result in search_results[:3]:  # Limit to top 3 results per query
-                    try:
-                        # Extract title and link
-                        title_elem = result.find('h3')
-                        if not title_elem:
-                            continue
-                            
-                        link_elem = result.find('a')
-                        if not link_elem:
-                            continue
-                            
-                        title = title_elem.get_text(strip=True)
-                        link = link_elem.get('href', '')
-                        
-                        # Clean up Google redirect URLs
-                        if link.startswith('/url?q='):
-                            link = urllib.parse.unquote(link.split('/url?q=')[1].split('&')[0])
-                        
-                        # Extract snippet
-                        snippet_elem = result.find('span', class_='aCOpRe')
-                        if not snippet_elem:
-                            snippet_elem = result.find('div', class_='IsZvec')
-                        snippet = snippet_elem.get_text(strip=True) if snippet_elem else ''
-                        
-                        # Validate the result
-                        if not self.validate_faculty_mention(faculty_name, title, snippet, link):
-                            continue
-                        
-                        # Check if it's from the right time period
-                        pub_date = self.extract_publication_date(f"{title} {snippet}", link)
-                        if not self.is_date_in_range(pub_date):
-                            continue
-                        
-                        # Get source name
-                        is_trusted, source_name = self.is_trusted_source(link)
-                        if not is_trusted:
-                            try:
-                                domain = urllib.parse.urlparse(link).netloc
-                                source_name = domain.replace('www.', '').replace('.com', '').replace('.org', '').title()
-                            except:
-                                source_name = "Unknown"
-                        
-                        all_results.append({
-                            'title': title,
-                            'url': link,
-                            'snippet': snippet,
-                            'source': source_name,
-                            'publication_date': pub_date,
-                            'faculty_name': faculty_name
-                        })
-                        
-                    except Exception as e:
-                        continue
-                
-                # Rate limiting between queries
-                time.sleep(random.uniform(3, 6))
-                
-            except Exception as e:
-                print(f"  Search error for query '{query}': {e}")
-                continue
+        # Multiple search engines for broader coverage
+        search_engines = [
+            ('Google', 'https://www.google.com/search'),
+            ('Bing', 'https://www.bing.com/search'),
+        ]
         
-        # Remove duplicates
+        for engine_name, engine_url in search_engines:
+            for query in search_queries[:3]:  # Use top 3 queries per engine
+                try:
+                    if engine_name == 'Google':
+                        search_url = f"{engine_url}?q={urllib.parse.quote(query)}&tbs=cdr:1,cd_min:5/31/2025,cd_max:7/31/2025"
+                    else:  # Bing
+                        search_url = f"{engine_url}?q={urllib.parse.quote(query + ' after:2025-05-31 before:2025-08-01')}"
+                    
+                    headers = {
+                        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                        'Accept-Language': 'en-US,en;q=0.9',
+                        'Accept-Encoding': 'gzip, deflate, br',
+                        'DNT': '1',
+                        'Connection': 'keep-alive',
+                        'Upgrade-Insecure-Requests': '1',
+                    }
+                    
+                    response = requests.get(search_url, headers=headers, timeout=15)
+                    soup = BeautifulSoup(response.content, 'html.parser')
+                    
+                    # Parse results based on search engine
+                    if engine_name == 'Google':
+                        search_results = soup.find_all('div', class_='g') + soup.find_all('div', attrs={'data-sokobanmark': True})
+                    else:  # Bing
+                        search_results = soup.find_all('li', class_='b_algo')
+                    
+                    found_results = 0
+                    for result in search_results[:5]:  # Check top 5 results per query
+                        try:
+                            if engine_name == 'Google':
+                                title_elem = result.find('h3')
+                                link_elem = result.find('a')
+                                snippet_elem = result.find('span', class_='aCOpRe') or result.find('div', class_='VwiC3b')
+                            else:  # Bing
+                                title_elem = result.find('h2')
+                                link_elem = title_elem.find('a') if title_elem else None
+                                snippet_elem = result.find('p')
+                            
+                            if not title_elem or not link_elem:
+                                continue
+                                
+                            title = title_elem.get_text(strip=True)
+                            link = link_elem.get('href', '')
+                            snippet = snippet_elem.get_text(strip=True) if snippet_elem else ''
+                            
+                            # Clean up URLs
+                            if link.startswith('/url?q='):
+                                link = urllib.parse.unquote(link.split('/url?q=')[1].split('&')[0])
+                            
+                            if not link.startswith('http'):
+                                continue
+                            
+                            # Validate the result (less strict for comprehensive search)
+                            content_text = f"{title} {snippet}".lower()
+                            faculty_lower = faculty_name.lower()
+                            
+                            # Check if faculty name appears in content
+                            name_found = False
+                            if faculty_lower in content_text:
+                                name_found = True
+                            else:
+                                # Check name components
+                                name_parts = faculty_lower.split()
+                                if len(name_parts) >= 2:
+                                    last_name = name_parts[-1]
+                                    first_name = name_parts[0]
+                                    if last_name in content_text and first_name in content_text:
+                                        name_found = True
+                            
+                            if not name_found:
+                                continue
+                            
+                            # Extract publication date (more flexible)
+                            pub_date = self.extract_publication_date_flexible(f"{title} {snippet}", link)
+                            
+                            # Get source name
+                            is_trusted, source_name = self.is_trusted_source(link)
+                            if not is_trusted:
+                                try:
+                                    domain = urllib.parse.urlparse(link).netloc
+                                    source_name = domain.replace('www.', '').replace('.com', '').replace('.org', '').replace('.net', '').title()
+                                except:
+                                    source_name = "Unknown"
+                            
+                            result_dict = {
+                                'title': title,
+                                'url': link,
+                                'snippet': snippet,
+                                'source': source_name,
+                                'publication_date': pub_date,
+                                'faculty_name': faculty_name,
+                                'search_engine': engine_name
+                            }
+                            
+                            all_results.append(result_dict)
+                            found_results += 1
+                            
+                            print(f"    ✓ Found: {title[:60]}... ({source_name})")
+                            
+                        except Exception as e:
+                            continue
+                    
+                    if found_results > 0:
+                        print(f"    📊 {engine_name}: {found_results} results for '{query[:40]}...'")
+                    
+                    # Rate limiting between searches
+                    time.sleep(random.uniform(2, 4))
+                    
+                except Exception as e:
+                    print(f"    ⚠️ {engine_name} search error: {str(e)[:50]}...")
+                    continue
+        
+        # Remove duplicates based on URL
         unique_results = []
         seen_urls = set()
         
@@ -432,7 +462,40 @@ class CSRRMediaSearcher:
                 seen_urls.add(url)
                 unique_results.append(result)
         
-        return unique_results[:3]  # Limit to top 3 results per faculty
+        print(f"  📊 Total unique results found: {len(unique_results)}")
+        return unique_results[:5]  # Return top 5 results per faculty
+    
+    def extract_publication_date_flexible(self, content: str, url: str) -> str:
+        """More flexible date extraction for recent articles"""
+        # Common date patterns (more inclusive)
+        date_patterns = [
+            r'July\s+\d{1,2},?\s+2025',
+            r'June\s+\d{1,2},?\s+2025', 
+            r'May\s+\d{1,2},?\s+2025',
+            r'07[/-]\d{1,2}[/-]2025',
+            r'06[/-]\d{1,2}[/-]2025',
+            r'05[/-]\d{1,2}[/-]2025',
+            r'2025[/-]07[/-]\d{1,2}',
+            r'2025[/-]06[/-]\d{1,2}',
+            r'2025[/-]05[/-]\d{1,2}',
+            r'(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+\d{1,2},?\s+202[45]',
+            r'\d{1,2}[/-]\d{1,2}[/-]202[45]',
+            r'202[45]-\d{2}-\d{2}'
+        ]
+        
+        for pattern in date_patterns:
+            match = re.search(pattern, content, re.IGNORECASE)
+            if match:
+                return match.group(0)
+        
+        # Check URL for date patterns
+        for pattern in date_patterns:
+            match = re.search(pattern, url, re.IGNORECASE)
+            if match:
+                return match.group(0)
+        
+        # Default to July 2025 for current search
+        return "July 2025"
 
     def search_faculty_comprehensive(self, faculty_name: str) -> List[Dict]:
         """Comprehensive search for a faculty member with multiple strategies"""
@@ -763,9 +826,15 @@ class CSRRMediaSearcher:
         all_results = []
         faculty_with_results = 0
         
-        # Use dynamic faculty list from website if available
-        dynamic_faculty = self.fetch_faculty_list_from_website()
-        faculty_to_search = dynamic_faculty if dynamic_faculty else FACULTY_LIST
+        # Load complete faculty list from extract_faculty.py
+        try:
+            from extract_faculty import extract_faculty_names
+            dynamic_faculty = extract_faculty_names()
+            faculty_to_search = dynamic_faculty if dynamic_faculty else FACULTY_LIST
+        except ImportError:
+            # Fallback to fetching from website
+            dynamic_faculty = self.fetch_faculty_list_from_website()
+            faculty_to_search = dynamic_faculty if dynamic_faculty else FACULTY_LIST
         
         print(f"Using {len(faculty_to_search)} faculty members from CSRR website")
         print()
