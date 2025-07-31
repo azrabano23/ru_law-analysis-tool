@@ -56,7 +56,34 @@ def extract_faculty_names():
     # Remove duplicates and sort
     faculty_names = sorted(list(set(faculty_names)))
     
-    return faculty_names
+    # Filter out non-faculty entries that shouldn't be treated as names
+    non_faculty_terms = [
+        'LATEST NEWS', 'BREAKING NEWS', 'NEWS UPDATE', 'FEATURED', 'SPOTLIGHT',
+        'ANNOUNCEMENT', 'ALERT', 'NOTICE', 'UPDATE', 'PRESS RELEASE',
+        'MEDIA', 'CONTACT', 'INFORMATION', 'ABOUT', 'HOME', 'SEARCH',
+        'MENU', 'NAVIGATION', 'FOOTER', 'HEADER', 'SIDEBAR', 'MORE INFO',
+        'LEARN MORE', 'READ MORE', 'CLICK HERE', 'VIEW ALL', 'SEE ALL'
+    ]
+    
+    filtered_faculty = []
+    for name in faculty_names:
+        # Skip if it's a non-faculty term
+        if name.upper() in non_faculty_terms:
+            print(f"  ⚠️  Filtered out non-faculty entry: {name}")
+            continue
+            
+        # Skip if it contains obvious non-name patterns
+        if any(term in name.upper() for term in ['NEWS', 'UPDATE', 'ALERT', 'CLICK', 'VIEW', 'READ']):
+            print(f"  ⚠️  Filtered out non-name pattern: {name}")
+            continue
+            
+        # Keep if it looks like a proper name (first/last name pattern)
+        name_parts = name.split()
+        if len(name_parts) >= 2 and all(part[0].isupper() and part[1:].islower() for part in name_parts if part.isalpha()):
+            filtered_faculty.append(name)
+    
+    print(f"Filtered {len(faculty_names) - len(filtered_faculty)} non-faculty entries")
+    return filtered_faculty
 
 if __name__ == "__main__":
     faculty_list = extract_faculty_names()
