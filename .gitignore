@@ -44,11 +44,11 @@ venv.bak/
 ehthumbs.db
 Thumbs.db
 
-# Generated reports
+# Generated reports (excluding sample output)
 *.xlsx
 *.docx
+!CSRR_Faculty_Op-Eds_Jun2025_to_Aug2025.docx
 CSRR_Faculty_Media_Report.xlsx
-CSRR_Faculty_Op-Eds*.docx
 
 # API keys and sensitive data
 .env
