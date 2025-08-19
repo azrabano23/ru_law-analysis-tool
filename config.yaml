@@ -1,0 +1,23 @@
+faculty:
+  auto_fetch_from_website: true
+  description: Faculty list settings
+  manual_list: []
+output:
+  description: Output file settings
+  excel_filename: CSRR_Faculty_Media_Report.xlsx
+  include_snippets: true
+  max_results_per_faculty: 15
+  word_filename: CSRR_Faculty_Op-Eds.docx
+  save_to_downloads: true
+search:
+  delay_between_searches: 5
+  description: Search behavior settings
+  max_results_per_query: 10
+  trusted_sources_only: false
+  use_google_api: false
+  use_basic_search: true
+  search_types: ['op-ed', 'interview', 'commentary', 'podcast', 'video']
+search_period:
+  description: Date range for media search (YYYY-MM-DD format)
+  end_date: '2025-07-31'
+  start_date: '2025-06-01'
