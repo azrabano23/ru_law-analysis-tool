@@ -566,15 +566,15 @@ class EnhancedFacultyMediaTracker:
         return filename
     
     def create_word_report(self, results: List[Dict]) -> str:
-        """Create Word report matching the exact format from Downloads folder"""
+        """Create Word report with clean, professional formatting"""
         doc = Document()
         
         # Set document properties
-        doc.core_properties.title = "Op-Eds by CSRR Faculty Affiliates"
-        doc.core_properties.author = "CSRR Enhanced Tracker"
+        doc.core_properties.title = "CSRR Faculty Op-Eds, Print Interviews, and Television Interviews"
+        doc.core_properties.author = "CSRR Enhanced Media Tracker"
         
         # Main title
-        title_para = doc.add_heading("Op-Eds by CSRR Faculty Affiliates", 0)
+        title_para = doc.add_heading("CSRR Faculty Op-Eds, Print Interviews, and Television Interviews", 0)
         
         # Subtitle with date range
         start_date = self.config['search_period']['start_date']
@@ -584,11 +584,7 @@ class EnhancedFacultyMediaTracker:
         try:
             start_dt = datetime.strptime(start_date, '%Y-%m-%d')
             end_dt = datetime.strptime(end_date, '%Y-%m-%d')
-            
-            if start_dt.year == end_dt.year and start_dt.month == 1 and start_dt.day == 1:
-                period = f"Since {start_dt.strftime('%B %-d, %Y')}"
-            else:
-                period = f"{start_dt.strftime('%B %-d, %Y')} - {end_dt.strftime('%B %-d, %Y')}"
+            period = f"{start_dt.strftime('%B %-d, %Y')} - {end_dt.strftime('%B %-d, %Y')}"
         except:
             period = f"{start_date} to {end_date}"
         
@@ -605,18 +601,28 @@ class EnhancedFacultyMediaTracker:
         
         # Add results by faculty
         for faculty_name in sorted(faculty_results.keys()):
-            doc.add_paragraph(faculty_name)
+            # Add faculty name as a paragraph
+            faculty_para = doc.add_paragraph(faculty_name)
             
+            # Add articles for this faculty
             results = faculty_results[faculty_name]
             for result in results:
+                # Clean up the title (remove extra spaces and truncate if too long)
+                title = result['title'].strip()
+                if len(title) > 100:
+                    title = title[:97] + "..."
+                
+                # Format the entry cleanly
                 formatted_entry = (
-                    f"{result['faculty_name']}, "
-                    f"{result['title']}, "
+                    f"{title}, "
                     f"{result['source']}, "
                     f"{result['publication_date']}, "
                     f"{result['url']}."
                 )
                 doc.add_paragraph(formatted_entry)
+            
+            # Add space between faculty
+            doc.add_paragraph("")
         
         # Add faculty with no results
         all_faculty = set(self.fetch_faculty_list())

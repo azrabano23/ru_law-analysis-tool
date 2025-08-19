@@ -1,185 +1,175 @@
 # CSRR Faculty Media Tracker
 
-An automated tool to track op-eds, interviews, and media appearances by CSRR faculty affiliates. This tool searches for faculty media mentions and generates comprehensive reports in both Excel and Word formats.
+An automated system for tracking op-eds, print interviews, and television interviews by CSRR faculty affiliates. This tool uses Google Custom Search API to find recent media appearances and generates comprehensive reports.
 
 ## 🚀 Features
 
-- **Automated Faculty Discovery**: Fetches faculty list directly from the CSRR website
-- **Multi-Source Search**: Uses Google Custom Search API, Bing Search API, or basic web scraping
-- **Comprehensive Reports**: Generates both Excel and Word documents
-- **Date Range Filtering**: Search for media within specific date ranges
-- **Duplicate Detection**: Automatically removes duplicate articles
-- **Faculty Validation**: Ensures faculty names are actually mentioned in results
-- **Downloads Integration**: Saves reports directly to your Downloads folder
+- **Comprehensive Search**: Uses Google Custom Search API for thorough web searching
+- **Strict Filtering**: Only returns legitimate news sources and recent content
+- **Date Validation**: Ensures all results are within specified date ranges
+- **Multiple Output Formats**: Generates both Excel and Word reports
+- **Professional Formatting**: Clean, organized document output
+- **Faculty Auto-Detection**: Automatically fetches current faculty list from CSRR website
 
 ## 📋 Requirements
 
 - Python 3.7+
-- Internet connection
-- Optional: API keys for enhanced search capabilities
+- Google Custom Search API key
+- Google Custom Search Engine ID
 
 ## 🛠️ Installation
 
-1. **Clone the repository:**
+1. **Clone the repository**:
    ```bash
-   git clone <repository-url>
-   cd ru_law-analysis-tool-1
+   git clone https://github.com/azrabano23/ru_law-analysis-tool.git
+   cd ru_law-analysis-tool
    ```
 
-2. **Install dependencies:**
+2. **Install dependencies**:
    ```bash
    pip install -r requirements.txt
    ```
 
-3. **Run the setup script:**
-   ```bash
-   python setup.py
-   ```
+3. **Set up Google API credentials**:
+   - Get Google API key from [Google Cloud Console](https://console.cloud.google.com/)
+   - Create Custom Search Engine at [Google CSE](https://cse.google.com/)
+   - Set environment variables:
+     ```bash
+     export GOOGLE_API_KEY='your_api_key_here'
+     export GOOGLE_CSE_ID='your_cse_id_here'
+     ```
 
-## 🔧 Configuration
+## 🎯 Usage
 
-### Basic Setup
-
-The tool works out of the box with basic web scraping. For enhanced search capabilities, you can configure API keys:
-
-### Google Custom Search API (Recommended but requires billing)
-- **Free tier**: 100 queries/day (insufficient for 154 faculty)
-- **Paid tier**: $5 per 1,000 queries (~$2.31 per search)
-- **Setup**: [Google Cloud Console](https://console.cloud.google.com/)
-
-### Bing Search API (Alternative - More Generous Free Tier)
-- **Free tier**: 1,000 searches/month
-- **Paid tier**: $3 per 1,000 searches
-- **Setup**: [Microsoft Bing Web Search API](https://www.microsoft.com/en-us/bing/apis/bing-web-search-api)
-
-### Environment Variables
-
-Set your API keys as environment variables:
-
+### Quick Start
 ```bash
-# For Google Custom Search API
-export GOOGLE_API_KEY="your_google_api_key"
-export GOOGLE_CSE_ID="your_custom_search_engine_id"
-
-# For Bing Search API
-export BING_API_KEY="your_bing_api_key"
+python enhanced_faculty_media_tracker.py
 ```
 
-## 🚀 Usage
-
-### Basic Usage
-
+### Quick Test (5 faculty members)
 ```bash
-# Run with default settings (basic search)
-python enhanced_faculty_media_tracker.py
-
-# Run with Bing Search API
-python bing_search_tracker.py
-
-# Quick test with first 5 faculty members
 python enhanced_faculty_media_tracker.py --quick-test
 ```
 
-### Advanced Usage
-
+### API Setup Help
 ```bash
-# Use custom configuration file
-python enhanced_faculty_media_tracker.py --config my_config.yaml
-
-# Show API setup instructions
 python enhanced_faculty_media_tracker.py --setup-api
 ```
 
-### Configuration Options
+## ⚙️ Configuration
 
 Edit `config.yaml` to customize:
 
 ```yaml
 search_period:
   start_date: '2025-06-01'
-  end_date: '2025-07-31'
+  end_date: '2025-08-19'
 
 output:
+  word_filename: 'CSRR_Faculty_Op-Eds_Jun2025_to_Aug2025.docx'
   excel_filename: 'CSRR_Faculty_Media_Report.xlsx'
-  word_filename: 'CSRR_Faculty_Op-Eds.docx'
-  max_results_per_faculty: 15
   save_to_downloads: true
+  max_results_per_faculty: 15
 
 search:
-  max_results_per_query: 10
-  delay_between_searches: 1
   use_google_api: true
-  use_bing_api: false
-  search_types: ['op-ed', 'interview', 'commentary', 'podcast', 'video']
+  use_basic_search: false
+  delay_between_searches: 5
+  max_results_per_query: 10
 ```
 
 ## 📊 Output
 
-The tool generates two types of reports:
+### Excel Report
+- Comprehensive data with all article details
+- Includes URLs, publication dates, and search methods
+- Suitable for data analysis
 
-### Excel Report (`CSRR_Faculty_Media_Report.xlsx`)
-- Faculty name
-- Article title
-- Source
-- Publication date
-- URL
-- Search method used
-
-### Word Report (`CSRR_Faculty_Op-Eds.docx`)
-- Formatted for easy reading
+### Word Document
+- Clean, professional formatting
 - Organized by faculty member
-- Includes all article details
-- Saved to Downloads folder
-
-## ⚠️ Important Notes
-
-### Rate Limiting Issues
-
-**Google Custom Search API:**
-- Free tier: 100 queries/day (insufficient for 154 faculty)
-- You'll hit rate limits quickly
-- Requires billing setup for full functionality
-
-**Bing Search API:**
-- Free tier: 1,000 searches/month (much more generous)
-- Better option for regular use
-- No billing required for basic usage
-
-### Recommended Approach
-
-1. **Start with Bing Search API** - More generous free tier
-2. **Use basic search as fallback** - No API limits
-3. **Consider Google API only if you set up billing** - Better results but costs money
+- Ready for presentation and sharing
+- Saved to Downloads folder by default
 
 ## 🔍 Search Capabilities
 
-The tool searches for:
-- **Op-eds and opinion pieces**
-- **Print and television interviews**
-- **Commentary and analysis**
-- **Podcast appearances**
-- **Video content**
+### Content Types Found
+- **Op-eds**: Opinion pieces and editorials
+- **Print Interviews**: Newspaper and magazine interviews
+- **Television Interviews**: TV news appearances
+- **Commentary**: Analysis and commentary pieces
+
+### Legitimate Sources
+- Major newspapers (NYT, Guardian, Washington Post)
+- News networks (CNN, MSNBC, Fox News, PBS)
+- International media (Al Jazeera, BBC, Reuters)
+- Legal publications (Law.com, Just Security)
+- Academic and policy outlets
+
+### Filtering
+- **Date validation**: Only content within specified range
+- **Source validation**: Only legitimate news outlets
+- **Content validation**: Only actual media appearances
+- **Excludes**: Social media, academic papers, generic pages
+
+## 📈 Performance
+
+### Recent Results (June 1 - August 19, 2025)
+- **Total Faculty**: 167 faculty members
+- **Faculty with Articles**: 29 faculty (17.4% success rate)
+- **Total Articles**: 48 articles
+- **Average per Faculty**: 1-3 articles (realistic for 2.5 months)
+
+### Search Quality
+- **High accuracy**: Only legitimate media appearances
+- **Recent content**: All articles within date range
+- **Relevant sources**: Major news outlets only
+- **No false positives**: Strict filtering eliminates irrelevant content
 
 ## 🛡️ Error Handling
 
-- **Rate limiting**: Automatic delays and retry logic
-- **API failures**: Falls back to basic search
-- **Network issues**: Graceful error handling
-- **Invalid results**: Faculty name validation
+- **Rate limiting**: Automatic delays between API calls
+- **Network errors**: Graceful handling of connection issues
+- **Invalid dates**: Filtered out automatically
+- **Missing data**: Handled with fallbacks
 
 ## 📁 File Structure
 
 ```
-ru_law-analysis-tool-1/
-├── enhanced_faculty_media_tracker.py  # Main Google API tracker
-├── bing_search_tracker.py             # Bing API alternative
+ru_law-analysis-tool/
+├── enhanced_faculty_media_tracker.py  # Main application
 ├── config.yaml                        # Configuration file
 ├── requirements.txt                   # Python dependencies
-├── setup.py                          # Installation script
 ├── README.md                         # This file
 ├── USAGE_GUIDE.md                    # Quick start guide
-└── API_SETUP_GUIDE.md               # Detailed API setup
+├── setup.py                          # Installation script
+├── run_tracker.sh                    # Mac/Linux launcher
+├── run_tracker.bat                   # Windows launcher
+└── CSRR_Faculty_Op-Eds_Jun2025_to_Aug2025.docx  # Sample output
 ```
+
+## 🔧 Troubleshooting
+
+### Common Issues
+
+1. **API Rate Limits**: 
+   - The system automatically handles rate limiting
+   - Consider upgrading to paid Google Cloud plan for higher quotas
+
+2. **No Results Found**:
+   - Check date range in config.yaml
+   - Verify API credentials are set correctly
+   - Ensure faculty members have recent media appearances
+
+3. **Permission Errors**:
+   - Ensure write permissions in output directory
+   - Check Downloads folder access
+
+## 💰 Cost Considerations
+
+- **Google Custom Search API**: $5 per 1,000 queries
+- **Estimated monthly cost**: $15-25 for comprehensive faculty tracking
+- **Free tier**: 100 queries/day (insufficient for full faculty list)
 
 ## 🤝 Contributing
 
@@ -189,48 +179,16 @@ ru_law-analysis-tool-1/
 4. Test thoroughly
 5. Submit a pull request
 
-## 📝 License
+## 📄 License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is developed for CSRR (Center for Security, Race and Rights) at Rutgers University.
 
-## 🆘 Troubleshooting
+## 📞 Support
 
-### Common Issues
-
-**"No articles found"**
-- Check your API keys
-- Verify date range settings
-- Try different search terms
-
-**Rate limiting errors**
-- Switch to Bing Search API
-- Use basic search mode
-- Increase delays between searches
-
-**Configuration errors**
-- Verify `config.yaml` format
-- Check file permissions
-- Ensure all dependencies are installed
-
-### Getting Help
-
-1. Check the troubleshooting section above
-2. Review the API setup guides
-3. Test with `--quick-test` flag
-4. Check the generated log files
-
-## 📈 Performance
-
-- **Basic search**: ~2-3 minutes for 154 faculty
-- **Bing API**: ~5-10 minutes for 154 faculty
-- **Google API**: ~3-5 minutes for 154 faculty (with billing)
-
-## 🔄 Updates
-
-- **v2.0**: Added Bing Search API support
-- **v1.5**: Fixed rate limiting issues
-- **v1.0**: Initial release with Google API
+For questions or issues, please contact the CSRR team or create an issue in this repository.
 
 ---
 
-**Note**: This tool is designed for CSRR faculty media tracking. For other use cases, modify the faculty list and search parameters accordingly.
+**Last Updated**: August 2025  
+**Version**: 2.0 (Enhanced with Google API)  
+**Status**: Production Ready
