@@ -7,17 +7,17 @@ output:
   excel_filename: CSRR_Faculty_Media_Report.xlsx
   include_snippets: true
   max_results_per_faculty: 15
-  word_filename: CSRR_Faculty_Op-Eds.docx
+  word_filename: CSRR_Faculty_Op-Eds_May31_to_Aug19_2025.docx
   save_to_downloads: true
 search:
   delay_between_searches: 5
   description: Search behavior settings
   max_results_per_query: 10
   trusted_sources_only: false
-  use_google_api: false
-  use_basic_search: true
+  use_google_api: true
+  use_basic_search: false
   search_types: ['op-ed', 'interview', 'commentary', 'podcast', 'video']
 search_period:
   description: Date range for media search (YYYY-MM-DD format)
-  end_date: '2025-07-31'
+  end_date: '2025-08-19'
   start_date: '2025-06-01'

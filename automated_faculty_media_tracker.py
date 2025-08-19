@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-Enhanced CSRR Faculty Media Tracker with Google Custom Search API
-Comprehensive search for op-eds, interviews, and media appearances
+CSRR Automated Faculty Media Tracker
+A user-friendly tool for fellows to automatically track faculty media appearances
 
 Author: AI Assistant
 Date: 2025
-"""
+"""\ert0-\poiu 
 
 import pandas as pd
 from docx import Document
@@ -23,8 +23,8 @@ import argparse
 import yaml
 from pathlib import Path
 
-class EnhancedFacultyMediaTracker:
-    """Enhanced automated tool for tracking CSRR faculty media appearances"""
+class AutomatedFacultyMediaTracker:
+    """Automated tool for tracking CSRR faculty media appearances"""
     
     def __init__(self, config_file: str = "config.yaml"):
         self.config = self.load_config(config_file)
@@ -33,14 +33,6 @@ class EnhancedFacultyMediaTracker:
             'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
         })
         self.results = []
-        
-        # API Configuration
-        self.google_api_key = os.getenv("GOOGLE_API_KEY")
-        self.google_cse_id = os.getenv("GOOGLE_CSE_ID")
-        
-        if not self.google_api_key or not self.google_cse_id:
-            print("⚠️  Google API not configured. Using basic search only.")
-            print("💡 To enable enhanced search, set GOOGLE_API_KEY and GOOGLE_CSE_ID environment variables")
         
     def load_config(self, config_file: str) -> Dict:
         """Load configuration from YAML file"""
@@ -53,25 +45,23 @@ class EnhancedFacultyMediaTracker:
                 'excel_filename': 'CSRR_Faculty_Media_Report.xlsx',
                 'word_filename': 'CSRR_Faculty_Op-Eds.docx',
                 'include_snippets': True,
-                'max_results_per_faculty': 10,  # Increased for enhanced search
-                'save_to_downloads': True  # New option to save to Downloads folder
+                'max_results_per_faculty': 5
             },
             'search': {
-                'max_results_per_query': 10,  # Increased for Google API
-                'delay_between_searches': 1,  # Reduced for API
-                'use_google_api': True,
-                'use_basic_search': True,  # Fallback
-                'search_types': ['op-ed', 'interview', 'commentary', 'podcast', 'video']
+                'max_results_per_query': 3,
+                'delay_between_searches': 3,
+                'trusted_sources_only': False
             },
             'faculty': {
                 'auto_fetch_from_website': True,
-                'manual_list': []
+                'manual_list': []  # Fallback list if website fetch fails
             }
         }
         
         if os.path.exists(config_file):
             with open(config_file, 'r') as f:
                 user_config = yaml.safe_load(f) or {}
+                # Merge user config with defaults
                 for key, value in user_config.items():
                     if key in default_config:
                         if isinstance(value, dict):
@@ -83,8 +73,42 @@ class EnhancedFacultyMediaTracker:
         
         return default_config
     
+    def create_default_config(self, config_file: str = "config.yaml"):
+        """Create a default configuration file"""
+        default_config = {
+            'search_period': {
+                'start_date': '2025-06-01',
+                'end_date': '2025-07-31',
+                'description': 'Date range for media search (YYYY-MM-DD format)'
+            },
+            'output': {
+                'excel_filename': 'CSRR_Faculty_Media_Report.xlsx',
+                'word_filename': 'CSRR_Faculty_Media_Report.docx',
+                'include_snippets': True,
+                'max_results_per_faculty': 5,
+                'description': 'Output file settings'
+            },
+            'search': {
+                'max_results_per_query': 3,
+                'delay_between_searches': 3,
+                'trusted_sources_only': False,
+                'description': 'Search behavior settings'
+            },
+            'faculty': {
+                'auto_fetch_from_website': True,
+                'manual_list': [],
+                'description': 'Faculty list settings'
+            }
+        }
+        
+        with open(config_file, 'w') as f:
+            yaml.dump(default_config, f, default_flow_style=False, indent=2)
+        
+        print(f"✅ Created default configuration file: {config_file}")
+        print("📝 Edit this file to customize your search settings")
+    
     def fetch_faculty_list(self) -> List[str]:
-        """Fetch faculty list from CSRR website"""
+        """Fetch faculty list from CSRR website or use manual list"""
         if self.config['faculty']['auto_fetch_from_website']:
             try:
                 print("🌐 Fetching faculty list from CSRR website...")
@@ -95,7 +119,13 @@ class EnhancedFacultyMediaTracker:
             except Exception as e:
                 print(f"⚠️  Could not fetch from website: {e}")
         
-        # Fallback to comprehensive list
+        # Fallback to manual list
+        manual_list = self.config['faculty']['manual_list']
+        if manual_list:
+            print(f"📋 Using manual faculty list: {len(manual_list)} members")
+            return manual_list
+        
+        # Final fallback - use the comprehensive list from the original script
         fallback_list = [
             "Adil Haque", "Adnan Zulfiqar", "Alexander A. Reinert", "Alexander Hinton",
             "Alexis Karteron", "Ali A. Olomi", "Ali R. Chaudhary", "Ameena Ghaffar-Kucher",
@@ -153,6 +183,7 @@ class EnhancedFacultyMediaTracker:
             if not line:
                 continue
                 
+            # Look for names that precede academic titles
             next_line = lines[i+1].strip() if i+1 < len(lines) else ""
             
             if any(title in next_line.lower() for title in [
@@ -167,6 +198,7 @@ class EnhancedFacultyMediaTracker:
                 if len(name.split()) >= 2 and len(name) < 50:
                     faculty_names.append(name)
         
+        # Also look for names in HTML elements
         for element in soup.find_all(['h3', 'h4', 'h5', 'strong', 'b']):
             text = element.get_text().strip()
             if text and len(text.split()) >= 2 and len(text) < 50:
@@ -174,6 +206,7 @@ class EnhancedFacultyMediaTracker:
                 if all(word[0].isupper() for word in words if word):
                     faculty_names.append(text)
         
+        # Clean and filter
         faculty_names = sorted(list(set(faculty_names)))
         filtered_faculty = []
         
@@ -185,77 +218,60 @@ class EnhancedFacultyMediaTracker:
         
         return filtered_faculty
     
-    def search_google_api(self, query: str, faculty_name: str) -> List[Dict]:
-        """Search using Google Custom Search API"""
-        if not self.google_api_key or not self.google_cse_id:
-            return []
+    def search_faculty_media(self, faculty_name: str) -> List[Dict]:
+        """Search for media appearances by a faculty member"""
+        print(f"🔍 Searching for: {faculty_name}")
         
+        search_queries = [
+            f'"{faculty_name}" article 2025',
+            f'"{faculty_name}" op-ed opinion 2025',
+            f'"{faculty_name}" interview 2025',
+            f'"{faculty_name}" commentary analysis 2025'
+        ]
+        
+        all_results = []
+        
+        for query in search_queries:
+            try:
+                results = self.search_web(query, faculty_name)
+                all_results.extend(results)
+                
+                # Rate limiting
+                time.sleep(random.uniform(1, self.config['search']['delay_between_searches']))
+                
+            except Exception as e:
+                print(f"  ⚠️  Search error: {e}")
+                continue
+        
+        # Remove duplicates and limit results
+        unique_results = []
+        seen_urls = set()
+        
+        for result in all_results:
+            url = result.get('url', '')
+            if url and url not in seen_urls:
+                seen_urls.add(url)
+                unique_results.append(result)
+                
+                if len(unique_results) >= self.config['output']['max_results_per_faculty']:
+                    break
+        
+        if unique_results:
+            print(f"  ✅ Found {len(unique_results)} articles")
+        else:
+            print(f"  ❌ No articles found")
+        
+        return unique_results
+    
+    def search_web(self, query: str, faculty_name: str) -> List[Dict]:
+        """Search the web for articles"""
         try:
             # Add date range to query
             start_date = self.config['search_period']['start_date']
             end_date = self.config['search_period']['end_date']
             date_query = f"{query} after:{start_date} before:{end_date}"
             
-            url = "https://www.googleapis.com/customsearch/v1"
-            params = {
-                'key': self.google_api_key,
-                'cx': self.google_cse_id,
-                'q': date_query,
-                'num': min(self.config['search']['max_results_per_query'], 10),  # Google API max is 10
-                'dateRestrict': 'm1'  # Restrict to last month
-            }
-            
-            response = self.session.get(url, params=params, timeout=15)
-            response.raise_for_status()
-            
-            data = response.json()
-            results = []
-            
-            if 'items' in data:
-                for item in data['items']:
-                    title = item.get('title', '')
-                    link = item.get('link', '')
-                    snippet = item.get('snippet', '')
-                    
-                    # Validate faculty mention
-                    if not self.validate_faculty_mention(faculty_name, title, snippet):
-                        continue
-                    
-                    # Filter out irrelevant sources
-                    if not self.is_relevant_source(link, title, snippet):
-                        continue
-                    
-                    # Extract source and date
-                    source = self.extract_source(link)
-                    pub_date = self.extract_date(f"{title} {snippet}", link)
-                    
-                    # Filter out articles with unknown dates
-                    if pub_date == "Unknown":
-                        continue
-                    
-                    results.append({
-                        'faculty_name': faculty_name,
-                        'title': title,
-                        'url': link,
-                        'snippet': snippet,
-                        'source': source,
-                        'publication_date': pub_date,
-                        'search_method': 'Google API'
-                    })
-            
-            return results
-            
-        except Exception as e:
-            print(f"  ⚠️  Google API search error: {e}")
-            return []
-    
-    def search_basic_web(self, query: str, faculty_name: str) -> List[Dict]:
-        """Basic web search using Bing (fallback)"""
-        try:
-            start_date = self.config['search_period']['start_date']
-            end_date = self.config['search_period']['end_date']
-            date_query = f"{query} after:{start_date} before:{end_date}"
-            
+            # Use Bing search
             url = f"https://www.bing.com/search?q={urllib.parse.quote(date_query)}&count={self.config['search']['max_results_per_query']}"
             
             response = self.session.get(url, timeout=15)
@@ -279,19 +295,13 @@ class EnhancedFacultyMediaTracker:
                 snippet_elem = result.find('p')
                 snippet = snippet_elem.get_text(strip=True) if snippet_elem else ''
                 
+                # Validate faculty mention
                 if not self.validate_faculty_mention(faculty_name, title, snippet):
                     continue
                 
-                # Filter out irrelevant sources
-                if not self.is_relevant_source(link, title, snippet):
-                    continue
-                
+                # Extract source and date
                 source = self.extract_source(link)
                 pub_date = self.extract_date(f"{title} {snippet}", link)
-                
-                # Filter out articles with unknown dates
-                if pub_date == "Unknown":
-                    continue
                 
                 results.append({
                     'faculty_name': faculty_name,
@@ -299,157 +309,14 @@ class EnhancedFacultyMediaTracker:
                     'url': link,
                     'snippet': snippet,
                     'source': source,
-                    'publication_date': pub_date,
-                    'search_method': 'Basic Web'
+                    'publication_date': pub_date
                 })
             
             return results
             
         except Exception as e:
-            print(f"  ⚠️  Basic web search error: {e}")
+            print(f"  ⚠️  Web search error: {e}")
             return []
-    
-    def search_faculty_media(self, faculty_name: str) -> List[Dict]:
-        """Comprehensive search for faculty media appearances"""
-        print(f"🔍 Searching for: {faculty_name}")
-        
-        # Enhanced search queries focused on op-eds, print interviews, and television interviews
-        search_queries = []
-        
-        # Op-eds and opinion pieces
-        search_queries.extend([
-            f'"{faculty_name}" op-ed',
-            f'"{faculty_name}" opinion piece',
-            f'"{faculty_name}" editorial',
-            f'"{faculty_name}" opinion',
-            f'"{faculty_name}" guest column',
-            f'"{faculty_name}" commentary'
-        ])
-        
-        # Print interviews
-        search_queries.extend([
-            f'"{faculty_name}" interview',
-            f'"{faculty_name}" interviewed',
-            f'"{faculty_name}" speaks with',
-            f'"{faculty_name}" Q&A',
-            f'"{faculty_name}" conversation with'
-        ])
-        
-        # Television interviews
-        search_queries.extend([
-            f'"{faculty_name}" television',
-            f'"{faculty_name}" TV interview',
-            f'"{faculty_name}" news interview',
-            f'"{faculty_name}" CNN',
-            f'"{faculty_name}" MSNBC',
-            f'"{faculty_name}" Fox News',
-            f'"{faculty_name}" PBS',
-            f'"{faculty_name}" ABC',
-            f'"{faculty_name}" CBS',
-            f'"{faculty_name}" NBC'
-        ])
-        
-        all_results = []
-        
-        # Use Google API if available
-        if self.config['search']['use_google_api'] and self.google_api_key:
-            for query in search_queries[:3]:  # Limit to top 3 queries to avoid rate limits
-                try:
-                    results = self.search_google_api(query, faculty_name)
-                    all_results.extend(results)
-                    time.sleep(random.uniform(2, 3))  # Increased API rate limiting
-                except Exception as e:
-                    if "429" in str(e):
-                        print(f"  ⚠️  Rate limit hit, waiting 10 seconds...")
-                        time.sleep(10)  # Wait longer on rate limit
-                    else:
-                        print(f"  ⚠️  Google API query error: {e}")
-                    continue
-        
-        # Use basic search as fallback or supplement
-        if self.config['search']['use_basic_search']:
-            for query in search_queries[:3]:  # Limit basic search queries
-                try:
-                    results = self.search_basic_web(query, faculty_name)
-                    all_results.extend(results)
-                    time.sleep(random.uniform(1, self.config['search']['delay_between_searches']))
-                except Exception as e:
-                    print(f"  ⚠️  Basic search error: {e}")
-                    continue
-        
-        # Remove duplicates and limit results
-        unique_results = []
-        seen_urls = set()
-        
-        for result in all_results:
-            url = result.get('url', '')
-            if url and url not in seen_urls:
-                seen_urls.add(url)
-                unique_results.append(result)
-                
-                if len(unique_results) >= self.config['output']['max_results_per_faculty']:
-                    break
-        
-        if unique_results:
-            print(f"  ✅ Found {len(unique_results)} articles")
-        else:
-            print(f"  ❌ No articles found")
-        
-        return unique_results
-    
-    def is_relevant_source(self, url: str, title: str, snippet: str) -> bool:
-        """Strict filtering for ONLY op-eds, print interviews, and television interviews"""
-        url_lower = url.lower()
-        title_lower = title.lower()
-        snippet_lower = snippet.lower()
-        content_lower = f"{title_lower} {snippet_lower}"
-        
-        # STRICT: Must be from legitimate news/media sources
-        legitimate_domains = [
-            'nytimes.com', 'washingtonpost.com', 'wsj.com', 'usatoday.com', 'latimes.com',
-            'chicagotribune.com', 'bostonglobe.com', 'philly.com', 'miamiherald.com',
-            'cnn.com', 'msnbc.com', 'foxnews.com', 'abcnews.go.com', 'cbsnews.com', 'nbcnews.com',
-            'pbs.org', 'npr.org', 'bbc.com', 'reuters.com', 'ap.org', 'bloomberg.com',
-            'politico.com', 'thehill.com', 'rollcall.com', 'nationalreview.com', 'newyorker.com',
-            'atlantic.com', 'huffpost.com', 'vox.com', 'slate.com', 'salon.com',
-            'guardian.com', 'independent.co.uk', 'telegraph.co.uk', 'ft.com', 'economist.com',
-            'aljazeera.com', 'middleeasteye.net', 'newarab.com', 'arabnews.com',
-            'law.com', 'abajournal.com', 'law360.com', 'scotusblog.com', 'justsecurity.org',
-            'lawfaremedia.org', 'balkinization.net', 'volokh.com', 'concurringopinions.com'
-        ]
-        
-        # Check if URL contains any legitimate domain
-        is_legitimate_source = any(domain in url_lower for domain in legitimate_domains)
-        if not is_legitimate_source:
-            return False
-        
-        # STRICT: Must contain specific media content indicators
-        media_indicators = [
-            'op-ed', 'opinion', 'editorial', 'guest column', 'commentary',
-            'interview', 'interviewed', 'speaks with', 'conversation with', 'q&a',
-            'television', 'tv interview', 'news interview', 'appears on', 'discusses',
-            'writes', 'author', 'byline', 'contributed', 'analysis'
-        ]
-        
-        has_media_indicator = any(indicator in content_lower for indicator in media_indicators)
-        if not has_media_indicator:
-            return False
-        
-        # EXCLUDE: Social media, academic papers, irrelevant content
-        exclude_patterns = [
-            'facebook.com', 'instagram.com', 'tiktok.com', 'twitter.com', 'x.com',
-            'linkedin.com', 'reddit.com', 'youtube.com', 'researchgate.net', 'jstor.org',
-            'academia.edu', 'scholar.google.com', 'arxiv.org', 'ssrn.com',
-            'archive', 'archives', 'course', 'syllabus', 'academic', 'student',
-            'sale', 'shop', 'store', 'product', 'booking', 'hotel', 'travel',
-            'obituary', 'funeral', 'memorial', 'wedding', 'birthday', 'party'
-        ]
-        
-        for pattern in exclude_patterns:
-            if pattern in url_lower or pattern in content_lower:
-                return False
-        
-        return True
     
     def validate_faculty_mention(self, faculty_name: str, title: str, snippet: str) -> bool:
         """Validate that the faculty member is actually mentioned"""
@@ -491,59 +358,26 @@ class EnhancedFacultyMediaTracker:
             return "Unknown"
     
     def extract_date(self, content: str, url: str) -> str:
-        """Extract publication date with strict validation for June 1 - Aug 19, 2025"""
-        # Only look for dates in 2025, specifically June-August
+        """Extract publication date"""
         date_patterns = [
-            r'(Jun|Jul|Aug)[a-z]*\.?\s+\d{1,2},?\s+2025',
-            r'\d{1,2}[/-](06|07|08)[/-]2025',
-            r'2025-(06|07|08)-\d{2}',
-            r'(June|July|August)\s+\d{1,2},?\s+2025'
+            r'(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+\d{1,2},?\s+202[45]',
+            r'\d{1,2}[/-]\d{1,2}[/-]202[45]',
+            r'202[45]-\d{2}-\d{2}'
         ]
         
         for pattern in date_patterns:
             match = re.search(pattern, content, re.IGNORECASE)
             if match:
-                date_str = match.group(0)
-                # Additional validation - must be June 1 or later, Aug 19 or earlier
-                if self.is_valid_date_in_range(date_str):
-                    return date_str
+                return match.group(0)
         
-        # If no valid date found, return "Unknown" instead of generic "2025"
-        return "Unknown"
-    
-    def is_valid_date_in_range(self, date_str: str) -> bool:
-        """Validate that date is within June 1 - August 19, 2025"""
-        try:
-            # Parse the date string
-            date_str_clean = date_str.strip()
-            
-            # Try different formats
-            for fmt in ['%b %d, %Y', '%B %d, %Y', '%m/%d/%Y', '%Y-%m-%d']:
-                try:
-                    parsed_date = datetime.strptime(date_str_clean, fmt)
-                    
-                    # Check if it's in our range: June 1 - August 19, 2025
-                    start_date = datetime(2025, 6, 1)
-                    end_date = datetime(2025, 8, 19)
-                    
-                    if start_date <= parsed_date <= end_date:
-                        return True
-                    else:
-                        return False
-                        
-                except ValueError:
-                    continue
-            
-            return False
-        except:
-            return False
+        return "2025"
     
     def create_excel_report(self, results: List[Dict]) -> str:
         """Create Excel report"""
         if not results:
             df = pd.DataFrame(columns=[
                 "Faculty Name", "Title", "Source", "URL", 
-                "Publication Date", "Date Found", "Snippet", "Search Method"
+                "Publication Date", "Date Found", "Snippet"
             ])
         else:
             excel_data = []
@@ -555,8 +389,7 @@ class EnhancedFacultyMediaTracker:
                     "URL": result['url'],
                     "Publication Date": result['publication_date'],
                     "Date Found": datetime.now().strftime('%Y-%m-%d'),
-                    "Snippet": result['snippet'][:500] + "..." if len(result['snippet']) > 500 else result['snippet'],
-                    "Search Method": result.get('search_method', 'Unknown')
+                    "Snippet": result['snippet'][:500] + "..." if len(result['snippet']) > 500 else result['snippet']
                 })
             df = pd.DataFrame(excel_data)
         
@@ -569,31 +402,35 @@ class EnhancedFacultyMediaTracker:
         """Create Word report matching the exact format from Downloads folder"""
         doc = Document()
         
-        # Set document properties
+        # Set document properties to match reference
         doc.core_properties.title = "Op-Eds by CSRR Faculty Affiliates"
-        doc.core_properties.author = "CSRR Enhanced Tracker"
+        doc.core_properties.author = "CSRR Automated Tracker"
         
-        # Main title
+        # Main title - matches reference format exactly
         title_para = doc.add_heading("Op-Eds by CSRR Faculty Affiliates", 0)
         
-        # Subtitle with date range
+        # Subtitle with date range - matches reference format
         start_date = self.config['search_period']['start_date']
         end_date = self.config['search_period']['end_date']
         
+        # Convert dates to readable format
         from datetime import datetime
         try:
             start_dt = datetime.strptime(start_date, '%Y-%m-%d')
             end_dt = datetime.strptime(end_date, '%Y-%m-%d')
             
+            # Format like "Since October 1, 2023" or "June 1, 2025 - July 31, 2025"
             if start_dt.year == end_dt.year and start_dt.month == 1 and start_dt.day == 1:
+                # Full year format
                 period = f"Since {start_dt.strftime('%B %-d, %Y')}"
             else:
+                # Date range format
                 period = f"{start_dt.strftime('%B %-d, %Y')} - {end_dt.strftime('%B %-d, %Y')}"
         except:
             period = f"{start_date} to {end_date}"
         
         subtitle_para = doc.add_paragraph(period)
-        doc.add_paragraph("")
+        doc.add_paragraph("")  # Empty line for spacing
         
         # Group results by faculty
         faculty_results = {}
@@ -603,12 +440,15 @@ class EnhancedFacultyMediaTracker:
                 faculty_results[faculty] = []
             faculty_results[faculty].append(result)
         
-        # Add results by faculty
+        # Add results by faculty - matches reference format exactly
         for faculty_name in sorted(faculty_results.keys()):
+            # Add faculty name as a paragraph (not heading) - matches reference format
             doc.add_paragraph(faculty_name)
             
             results = faculty_results[faculty_name]
             for result in results:
+                # Format: Author, Title, Source, Date, URL.
+                # Note: In the reference, the author is the faculty member
                 formatted_entry = (
                     f"{result['faculty_name']}, "
                     f"{result['title']}, "
@@ -618,53 +458,44 @@ class EnhancedFacultyMediaTracker:
                 )
                 doc.add_paragraph(formatted_entry)
         
-        # Add faculty with no results
+        # Add faculty with no results for completeness
         all_faculty = set(self.fetch_faculty_list())
         faculty_with_results = set(faculty_results.keys())
         faculty_without_results = all_faculty - faculty_with_results
         
         for faculty_name in sorted(faculty_without_results):
             doc.add_paragraph(faculty_name)
+            # No articles found - leave empty (matches reference format)
         
-        # Create filename with date range
+        # Create filename with date range for better organization
         start_date = self.config['search_period']['start_date']
         end_date = self.config['search_period']['end_date']
         
+        # Convert to readable format for filename
         from datetime import datetime
         try:
             start_dt = datetime.strptime(start_date, '%Y-%m-%d')
             end_dt = datetime.strptime(end_date, '%Y-%m-%d')
             
             if start_dt.year == end_dt.year and start_dt.month == 1 and start_dt.day == 1:
+                # Full year format
                 date_suffix = f"{start_dt.year}"
             else:
+                # Date range format
                 date_suffix = f"{start_dt.strftime('%b%Y')}_to_{end_dt.strftime('%b%Y')}"
         except:
             date_suffix = f"{start_date.replace('-', '')}_to_{end_date.replace('-', '')}"
         
         filename = f"CSRR_Faculty_Op-Eds_{date_suffix}.docx"
-        
-        # Save to Downloads folder if configured
-        if self.config['output']['save_to_downloads']:
-            downloads_path = os.path.expanduser("~/Downloads")
-            filename = os.path.join(downloads_path, filename)
-        
         doc.save(filename)
         print(f"📄 Word report saved: {filename}")
         return filename
     
     def run_search(self) -> Dict[str, str]:
-        """Run the complete enhanced media search"""
+        """Run the complete media search"""
         print("=" * 60)
-        print("🎯 ENHANCED CSRR FACULTY MEDIA TRACKER")
+        print("🎯 CSRR AUTOMATED FACULTY MEDIA TRACKER")
         print("=" * 60)
-        
-        # Check API configuration
-        if self.google_api_key and self.google_cse_id:
-            print("✅ Google Custom Search API configured - Enhanced search enabled")
-        else:
-            print("⚠️  Google API not configured - Using basic search only")
-            print("💡 For enhanced results, set GOOGLE_API_KEY and GOOGLE_CSE_ID")
         
         # Load faculty list
         faculty_list = self.fetch_faculty_list()
@@ -695,23 +526,12 @@ class EnhancedFacultyMediaTracker:
         
         # Final statistics
         print("\n" + "=" * 60)
-        print("📋 ENHANCED SEARCH COMPLETED")
+        print("📋 SEARCH COMPLETED")
         print("=" * 60)
         print(f"Total faculty processed: {len(faculty_list)}")
         print(f"Faculty with articles: {faculty_with_results}")
         print(f"Total articles found: {len(all_results)}")
         print(f"Success rate: {faculty_with_results/len(faculty_list)*100:.1f}%")
-        
-        # Search method breakdown
-        if all_results:
-            search_methods = {}
-            for result in all_results:
-                method = result.get('search_method', 'Unknown')
-                search_methods[method] = search_methods.get(method, 0) + 1
-            
-            print(f"\n🔍 Search Method Breakdown:")
-            for method, count in search_methods.items():
-                print(f"   {method}: {count} articles")
         
         # Generate reports
         excel_file = self.create_excel_report(all_results)
@@ -730,53 +550,35 @@ class EnhancedFacultyMediaTracker:
 
 def main():
     """Main function with command line interface"""
-    parser = argparse.ArgumentParser(description='Enhanced CSRR Faculty Media Tracker')
+    parser = argparse.ArgumentParser(description='CSRR Automated Faculty Media Tracker')
     parser.add_argument('--config', default='config.yaml', help='Configuration file path')
     parser.add_argument('--create-config', action='store_true', help='Create a default configuration file')
     parser.add_argument('--quick-test', action='store_true', help='Run a quick test with first 5 faculty')
-    parser.add_argument('--setup-api', action='store_true', help='Show API setup instructions')
     
     args = parser.parse_args()
     
-    if args.setup_api:
-        print("=" * 60)
-        print("🔧 GOOGLE CUSTOM SEARCH API SETUP")
-        print("=" * 60)
-        print("\n📋 Steps to enable enhanced search:")
-        print("\n1. Go to Google Cloud Console: https://console.cloud.google.com/")
-        print("2. Create a new project or select existing one")
-        print("3. Enable Custom Search API")
-        print("4. Create credentials (API Key)")
-        print("5. Go to Custom Search Engine: https://cse.google.com/")
-        print("6. Create a new search engine")
-        print("7. Set environment variables:")
-        print("   export GOOGLE_API_KEY='your_api_key_here'")
-        print("   export GOOGLE_CSE_ID='your_cse_id_here'")
-        print("\n💰 Cost: ~$5-10 per month for thorough searching")
-        print("📈 Coverage: Comprehensive web search including news, social media, podcasts")
-        return
-    
     if args.create_config:
-        tracker = EnhancedFacultyMediaTracker()
+        tracker = AutomatedFacultyMediaTracker()
         tracker.create_default_config(args.config)
         return
     
     # Initialize tracker
-    tracker = EnhancedFacultyMediaTracker(args.config)
+    tracker = AutomatedFacultyMediaTracker(args.config)
     
     if args.quick_test:
         print("🧪 Running quick test with first 5 faculty members...")
-        # Get the actual faculty list from website
-        faculty_list = tracker.fetch_faculty_list()
-        # Use first 5 for quick test
-        test_faculty = faculty_list[:5]
-        tracker.config['faculty']['manual_list'] = test_faculty
+        # Modify config for quick test
+        tracker.config['output']['max_results_per_faculty'] = 2
+        tracker.config['search']['max_results_per_query'] = 1
+        
+        faculty_list = tracker.fetch_faculty_list()[:5]
+        tracker.config['faculty']['manual_list'] = faculty_list
         tracker.config['faculty']['auto_fetch_from_website'] = False
     
     # Run the search
     results = tracker.run_search()
     
-    print(f"\n🎉 Enhanced search completed successfully!")
+    print(f"\n🎉 Search completed successfully!")
     print(f"📁 Check the generated files for your results.")
 
 if __name__ == "__main__":
