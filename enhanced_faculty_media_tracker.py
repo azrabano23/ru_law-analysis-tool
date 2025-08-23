@@ -520,11 +520,61 @@ class EnhancedFacultyMediaTracker:
         return False
     
     def extract_source(self, url: str) -> str:
-        """Extract source name from URL"""
+        """Extract and standardize source name from URL"""
         try:
-            domain = urllib.parse.urlparse(url).netloc
-            source = domain.replace('www.', '').replace('.com', '').replace('.org', '').replace('.net', '').title()
-            return source
+            domain = urllib.parse.urlparse(url).netloc.lower()
+            
+            # Remove www. prefix
+            if domain.startswith('www.'):
+                domain = domain[4:]
+            
+            # Standardize major news sources according to Bluebook conventions
+            source_mapping = {
+                'nytimes.com': 'N.Y. Times',
+                'washingtonpost.com': 'Wash. Post',
+                'theguardian.com': 'Guardian',
+                'guardian.com': 'Guardian',
+                'wsj.com': 'Wall St. J.',
+                'cnn.com': 'CNN',
+                'msnbc.com': 'MSNBC',
+                'foxnews.com': 'Fox News',
+                'bbc.com': 'BBC',
+                'reuters.com': 'Reuters',
+                'ap.org': 'Associated Press',
+                'bloomberg.com': 'Bloomberg',
+                'politico.com': 'Politico',
+                'thehill.com': 'Hill',
+                'nbcnews.com': 'NBC News',
+                'cbsnews.com': 'CBS News',
+                'abcnews.go.com': 'ABC News',
+                'pbs.org': 'PBS',
+                'npr.org': 'NPR',
+                'aljazeera.com': 'Al Jazeera',
+                'middleeasteye.net': 'Middle E. Eye',
+                'newarab.com': 'New Arab',
+                'huffpost.com': 'HuffPost',
+                'vox.com': 'Vox',
+                'slate.com': 'Slate',
+                'salon.com': 'Salon',
+                'newyorker.com': 'New Yorker',
+                'atlantic.com': 'Atlantic',
+                'nationalreview.com': 'Nat\'l Rev.',
+                'law.com': 'Law.com',
+                'abajournal.com': 'ABA J.',
+                'law360.com': 'Law360',
+                'scotusblog.com': 'SCOTUSblog',
+                'justsecurity.org': 'Just Security'
+            }
+            
+            # Return standardized name if found
+            if domain in source_mapping:
+                return source_mapping[domain]
+            
+            # For unknown sources, clean up the domain name
+            source = domain.replace('.com', '').replace('.org', '').replace('.net', '').replace('.edu', '')
+            # Capitalize properly
+            return source.title()
+            
         except:
             return "Unknown"
     
@@ -603,6 +653,120 @@ class EnhancedFacultyMediaTracker:
         print(f"📊 Excel report saved: {filename}")
         return filename
     
+    def clean_title(self, title: str) -> str:
+        """Clean and standardize article titles for professional formatting"""
+        if not title:
+            return "[Title unavailable]"
+        
+        # Remove extra whitespace and normalize
+        title = re.sub(r'\s+', ' ', title.strip())
+        
+        # Remove trailing ellipses that look like placeholders
+        title = re.sub(r'\.{3,}\s*$', '', title)
+        
+        # Fix obvious capitalization errors
+        title = re.sub(r"\bKing'S\b", "King's", title)
+        title = re.sub(r"\bQueen'S\b", "Queen's", title)
+        
+        # Convert to sentence case (law review standard)
+        # Keep first letter capitalized, lowercase the rest except proper nouns
+        words = title.split()
+        if words:
+            # Common proper nouns that should stay capitalized
+            proper_nouns = {
+                'israel', 'palestine', 'gaza', 'west', 'bank', 'america', 'american', 'us', 'usa',
+                'china', 'chinese', 'russia', 'russian', 'iran', 'iranian', 'iraq', 'iraqi',
+                'muslim', 'islam', 'islamic', 'christian', 'jewish', 'judaism', 'hindu', 'hinduism',
+                'harvard', 'yale', 'stanford', 'columbia', 'princeton', 'mit', 'ucla', 'nyu',
+                'supreme', 'court', 'congress', 'senate', 'house', 'fbi', 'cia', 'nato',
+                'un', 'united', 'nations', 'european', 'union', 'brexit', 'covid',
+                'january', 'february', 'march', 'april', 'may', 'june',
+                'july', 'august', 'september', 'october', 'november', 'december'
+            }
+            
+            cleaned_words = []
+            for i, word in enumerate(words):
+                # Keep first word capitalized
+                if i == 0:
+                    cleaned_words.append(word.capitalize())
+                # Keep proper nouns capitalized
+                elif word.lower() in proper_nouns:
+                    cleaned_words.append(word.capitalize())
+                # Keep acronyms capitalized (all caps, 2+ letters)
+                elif len(word) >= 2 and word.isupper():
+                    cleaned_words.append(word)
+                # Lowercase everything else
+                else:
+                    cleaned_words.append(word.lower())
+            
+            title = ' '.join(cleaned_words)
+        
+        # Limit length and add proper ellipsis if truncated
+        if len(title) > 100:
+            title = title[:97].rstrip() + "..."
+        
+        return title
+    
+    def clean_url(self, url: str) -> str:
+        """Clean and validate URLs, fixing truncation issues"""
+        if not url:
+            return "[URL unavailable]"
+        
+        # Remove any trailing periods or commas that got added
+        url = url.rstrip('.,;')
+        
+        # Check for truncated URLs (common patterns)
+        truncated_patterns = [
+            r'https?://[^\s]*\.\.\.$',  # URLs ending with ...
+            r'https?://[^\s]*\s*…\s*$',  # URLs ending with ellipsis
+            r'https?://www\.Middle$',   # Specific truncation pattern mentioned
+            r'https?://[^\s]*\.\.\.\s*$'  # URLs with trailing dots
+        ]
+        
+        for pattern in truncated_patterns:
+            if re.match(pattern, url):
+                return "[URL truncated - see original source]"
+        
+        # Validate URL format
+        if not url.startswith(('http://', 'https://')):
+            if url.startswith('www.'):
+                url = 'https://' + url
+            else:
+                return "[Invalid URL format]"
+        
+        return url
+    
+    def filter_valid_faculty(self, faculty_list: List[str]) -> List[str]:
+        """Filter out non-faculty entries like institutional titles"""
+        filtered = []
+        
+        # Patterns that indicate institutional roles, not faculty names
+        exclude_patterns = [
+            r'\bdirector\b',
+            r'\bcoordinator\b',
+            r'\bprogram\b',
+            r'\bdepartment\b',
+            r'\bcenter\b',
+            r'\binstitute\b',
+            r'\boffice\b',
+            r'\bstudies\b.*\bprogram\b',
+            r'^(the\s+)?(director|chair|head)\s+of\b',
+        ]
+        
+        for name in faculty_list:
+            # Skip if it matches exclusion patterns
+            if any(re.search(pattern, name.lower()) for pattern in exclude_patterns):
+                continue
+            
+            # Must have at least first and last name
+            name_parts = name.strip().split()
+            if len(name_parts) >= 2:
+                # Check if it looks like a person's name
+                if all(part[0].isupper() and len(part) > 1 for part in name_parts[:2]):
+                    filtered.append(name)
+        
+        return filtered
+    
     def create_word_report(self, results: List[Dict]) -> str:
         """Create Word report with clean, professional formatting"""
         doc = Document()
@@ -630,13 +794,21 @@ class EnhancedFacultyMediaTracker:
         subtitle_para = doc.add_paragraph(period)
         doc.add_paragraph("")
         
-        # Group results by faculty
+        # Group results by faculty and clean them
         faculty_results = {}
         for result in results:
             faculty = result['faculty_name']
             if faculty not in faculty_results:
                 faculty_results[faculty] = []
-            faculty_results[faculty].append(result)
+            
+            # Clean the result data
+            cleaned_result = {
+                'title': self.clean_title(result['title']),
+                'source': result['source'],  # Already cleaned by extract_source
+                'publication_date': result['publication_date'],
+                'url': self.clean_url(result['url'])
+            }
+            faculty_results[faculty].append(cleaned_result)
         
         # Add results by faculty
         for faculty_name in sorted(faculty_results.keys()):
@@ -644,16 +816,18 @@ class EnhancedFacultyMediaTracker:
             faculty_para = doc.add_paragraph(faculty_name)
             
             # Add articles for this faculty
-            results = faculty_results[faculty_name]
-            for result in results:
-                # Clean up the title (remove extra spaces and truncate if too long)
-                title = result['title'].strip()
-                if len(title) > 100:
-                    title = title[:97] + "..."
+            faculty_articles = faculty_results[faculty_name]
+            for result in faculty_articles:
+                # Skip entries with problematic URLs or titles
+                if (result['url'].startswith('[') or 
+                    result['title'].startswith('[') or
+                    'truncated' in result['url'].lower()):
+                    continue
                 
-                # Format the entry cleanly
+                # Format the entry professionally (Bluebook style)
+                # Title in italics would be ideal, but we'll use clean formatting
                 formatted_entry = (
-                    f"{title}, "
+                    f"{result['title']}, "
                     f"{result['source']}, "
                     f"{result['publication_date']}, "
                     f"{result['url']}."
@@ -663,8 +837,8 @@ class EnhancedFacultyMediaTracker:
             # Add space between faculty
             doc.add_paragraph("")
         
-        # Add faculty with no results
-        all_faculty = set(self.fetch_faculty_list())
+        # Add faculty with no results (filtered for actual faculty only)
+        all_faculty = set(self.filter_valid_faculty(self.fetch_faculty_list()))
         faculty_with_results = set(faculty_results.keys())
         faculty_without_results = all_faculty - faculty_with_results
         
