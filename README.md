@@ -20,24 +20,24 @@ An automated system for tracking op-eds, print interviews, and television interv
 ## 🛠️ Installation
 
 1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/azrabano23/ru_law-analysis-tool.git
-   cd ru_law-analysis-tool
-   ```
+ ```bash
+ git clone https://github.com/azrabano23/ru_law-analysis-tool.git
+ cd ru_law-analysis-tool
+ ```
 
 2. **Install dependencies**:
-   ```bash
-   pip install -r requirements.txt
-   ```
+ ```bash
+ pip install -r requirements.txt
+ ```
 
 3. **Set up Google API credentials**:
-   - Get Google API key from [Google Cloud Console](https://console.cloud.google.com/)
-   - Create Custom Search Engine at [Google CSE](https://cse.google.com/)
-   - Set environment variables:
-     ```bash
-     export GOOGLE_API_KEY='your_api_key_here'
-     export GOOGLE_CSE_ID='your_cse_id_here'
-     ```
+ - Get Google API key from [Google Cloud Console](https://console.cloud.google.com/)
+ - Create Custom Search Engine at [Google CSE](https://cse.google.com/)
+ - Set environment variables:
+ ```bash
+ export GOOGLE_API_KEY='your_api_key_here'
+ export GOOGLE_CSE_ID='your_cse_id_here'
+ ```
 
 ## 🎯 Usage
 
@@ -62,20 +62,20 @@ Edit `config.yaml` to customize:
 
 ```yaml
 search_period:
-  start_date: '2025-06-01'
-  end_date: '2025-08-19'
+ start_date: '2025-06-01'
+ end_date: '2025-08-19'
 
 output:
-  word_filename: 'CSRR_Faculty_Op-Eds_Jun2025_to_Aug2025.docx'
-  excel_filename: 'CSRR_Faculty_Media_Report.xlsx'
-  save_to_downloads: true
-  max_results_per_faculty: 15
+ word_filename: 'CSRR_Faculty_Op-Eds_Jun2025_to_Aug2025.docx'
+ excel_filename: 'CSRR_Faculty_Media_Report.xlsx'
+ save_to_downloads: true
+ max_results_per_faculty: 15
 
 search:
-  use_google_api: true
-  use_basic_search: false
-  delay_between_searches: 5
-  max_results_per_query: 10
+ use_google_api: true
+ use_basic_search: false
+ delay_between_searches: 5
+ max_results_per_query: 10
 ```
 
 ## 📊 Output
@@ -137,15 +137,15 @@ search:
 
 ```
 ru_law-analysis-tool/
-├── enhanced_faculty_media_tracker.py  # Main application
-├── config.yaml                        # Configuration file
-├── requirements.txt                   # Python dependencies
-├── README.md                         # This file
-├── USAGE_GUIDE.md                    # Quick start guide
-├── setup.py                          # Installation script
-├── run_tracker.sh                    # Mac/Linux launcher
-├── run_tracker.bat                   # Windows launcher
-└── CSRR_Faculty_Op-Eds_Jun2025_to_Aug2025.docx  # Sample output
+├── enhanced_faculty_media_tracker.py # Main application
+├── config.yaml # Configuration file
+├── requirements.txt # Python dependencies
+├── README.md # This file
+├── USAGE_GUIDE.md # Quick start guide
+├── setup.py # Installation script
+├── run_tracker.sh # Mac/Linux launcher
+├── run_tracker.bat # Windows launcher
+└── CSRR_Faculty_Op-Eds_Jun2025_to_Aug2025.docx # Sample output
 ```
 
 ## 🔧 Troubleshooting
@@ -153,17 +153,17 @@ ru_law-analysis-tool/
 ### Common Issues
 
 1. **API Rate Limits**: 
-   - The system automatically handles rate limiting
-   - Consider upgrading to paid Google Cloud plan for higher quotas
+ - The system automatically handles rate limiting
+ - Consider upgrading to paid Google Cloud plan for higher quotas
 
 2. **No Results Found**:
-   - Check date range in config.yaml
-   - Verify API credentials are set correctly
-   - Ensure faculty members have recent media appearances
+ - Check date range in config.yaml
+ - Verify API credentials are set correctly
+ - Ensure faculty members have recent media appearances
 
 3. **Permission Errors**:
-   - Ensure write permissions in output directory
-   - Check Downloads folder access
+ - Ensure write permissions in output directory
+ - Check Downloads folder access
 
 ## 💰 Cost Considerations
 
@@ -189,6 +189,6 @@ For questions or issues, please contact the CSRR team or create an issue in this
 
 ---
 
-**Last Updated**: August 2025  
-**Version**: 2.0 (Enhanced with Google API)  
-**Status**: Production Ready
+**Last Updated**: August 2025 
+**Version**: 2.0 (Enhanced with Google API) 
+**Status**: prototype
