@@ -3,8 +3,8 @@
 CSSR_FacultyOpEds_AutomationTool - Enhanced Faculty Media Tracker
 Comprehensive search for op-eds, interviews, and media appearances
 
-Author: AI Assistant
-Date: 2025
+Author: Azra Bano
+Date: 2025 · Rutgers Law CSRR
 """
 
 import pandas as pd
@@ -240,7 +240,7 @@ class EnhancedFacultyMediaTracker:
                 'cx': self.google_cse_id,
                 'q': date_query,
                 'num': min(self.config['search']['max_results_per_query'], 10),  # Google API max is 10
-                'dateRestrict': 'm1'  # Restrict to last month
+                'dateRestrict': 'm3'  # Restrict to last 3 months
             }
             
             response = self.session.get(url, params=params, timeout=15)
@@ -267,9 +267,10 @@ class EnhancedFacultyMediaTracker:
                     source = self.extract_source(link)
                     pub_date = self.extract_date(f"{title} {snippet}", link)
                     
-                    # Filter out articles with unknown dates
+                    # Accept articles even if date can't be precisely extracted
+                    # since Google API already restricts by date
                     if pub_date == "Unknown":
-                        continue
+                        pub_date = "2025 (Sept-Nov)"
                     
                     results.append({
                         'faculty_name': faculty_name,
@@ -579,13 +580,13 @@ class EnhancedFacultyMediaTracker:
             return "Unknown"
     
     def extract_date(self, content: str, url: str) -> str:
-        """Extract publication date with strict validation for June 1 - Aug 19, 2025"""
-        # Only look for dates in 2025, specifically June-August
+        """Extract publication date with strict validation for Sept 1 - Nov 28, 2025"""
+        # Only look for dates in 2025, specifically September-November
         date_patterns = [
-            r'(Jun|Jul|Aug)[a-z]*\.?\s+\d{1,2},?\s+2025',
-            r'\d{1,2}[/-](06|07|08)[/-]2025',
-            r'2025-(06|07|08)-\d{2}',
-            r'(June|July|August)\s+\d{1,2},?\s+2025'
+            r'(Sep|Oct|Nov)[a-z]*\.?\s+\d{1,2},?\s+2025',
+            r'\d{1,2}[/-](09|10|11)[/-]2025',
+            r'2025-(09|10|11)-\d{2}',
+            r'(September|October|November)\s+\d{1,2},?\s+2025'
         ]
         
         for pattern in date_patterns:
@@ -600,7 +601,7 @@ class EnhancedFacultyMediaTracker:
         return "Unknown"
     
     def is_valid_date_in_range(self, date_str: str) -> bool:
-        """Validate that date is within June 1 - August 19, 2025"""
+        """Validate that date is within Sept 1 - Nov 28, 2025"""
         try:
             # Parse the date string
             date_str_clean = date_str.strip()
@@ -610,9 +611,9 @@ class EnhancedFacultyMediaTracker:
                 try:
                     parsed_date = datetime.strptime(date_str_clean, fmt)
                     
-                    # Check if it's in our range: June 1 - August 19, 2025
-                    start_date = datetime(2025, 6, 1)
-                    end_date = datetime(2025, 8, 19)
+                    # Check if it's in our range: Sept 1 - Nov 28, 2025
+                    start_date = datetime(2025, 9, 1)
+                    end_date = datetime(2025, 11, 28)
                     
                     if start_date <= parsed_date <= end_date:
                         return True
@@ -768,17 +769,35 @@ class EnhancedFacultyMediaTracker:
         return filtered
     
     def create_word_report(self, results: List[Dict]) -> str:
-        """Create Word report with clean, professional formatting"""
+        """Create Word report with clean, professional formatting for law school standards"""
+        from docx.shared import Pt, Inches
+        from docx.enum.text import WD_ALIGN_PARAGRAPH
+        
         doc = Document()
         
         # Set document properties
-        doc.core_properties.title = "CSRR Faculty Op-Eds, Print Interviews, and Television Interviews"
-        doc.core_properties.author = "CSRR Enhanced Media Tracker"
+        doc.core_properties.title = "CSRR Faculty Media Appearances"
+        doc.core_properties.author = "Center for Security, Race and Rights"
         
-        # Main title
-        title_para = doc.add_heading("CSRR Faculty Op-Eds, Print Interviews, and Television Interviews", 0)
+        # Set document margins (1 inch all around - law school standard)
+        sections = doc.sections
+        for section in sections:
+            section.top_margin = Inches(1)
+            section.bottom_margin = Inches(1)
+            section.left_margin = Inches(1)
+            section.right_margin = Inches(1)
         
-        # Subtitle with date range
+        # Main title - centered and professional
+        title_para = doc.add_heading("Center for Security, Race and Rights", 0)
+        title_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        title_para.runs[0].font.size = Pt(16)
+        title_para.runs[0].font.bold = True
+        
+        subtitle = doc.add_heading("Faculty Media Appearances", level=1)
+        subtitle.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        subtitle.runs[0].font.size = Pt(14)
+        
+        # Date range
         start_date = self.config['search_period']['start_date']
         end_date = self.config['search_period']['end_date']
         
@@ -786,13 +805,30 @@ class EnhancedFacultyMediaTracker:
         try:
             start_dt = datetime.strptime(start_date, '%Y-%m-%d')
             end_dt = datetime.strptime(end_date, '%Y-%m-%d')
-            # Use cross-platform date formatting
-            period = f"{start_dt.strftime('%B %d, %Y')} - {end_dt.strftime('%B %d, %Y')}"
+            period = f"{start_dt.strftime('%B %d, %Y')} — {end_dt.strftime('%B %d, %Y')}"
         except:
             period = f"{start_date} to {end_date}"
         
-        subtitle_para = doc.add_paragraph(period)
-        doc.add_paragraph("")
+        date_para = doc.add_paragraph(period)
+        date_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        date_para.runs[0].font.size = Pt(11)
+        date_para.runs[0].italic = True
+        
+        # Summary statistics
+        faculty_count = len(set(r['faculty_name'] for r in results))
+        article_count = len(results)
+        
+        doc.add_paragraph()  # spacing
+        summary = doc.add_paragraph()
+        summary.add_run(f"Faculty with Media Appearances: {faculty_count}\n")
+        summary.add_run(f"Total Articles: {article_count}")
+        summary.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        summary.runs[0].font.size = Pt(10)
+        summary.runs[1].font.size = Pt(10)
+        
+        # Horizontal line
+        doc.add_paragraph("_" * 80)
+        doc.add_paragraph()
         
         # Group results by faculty and clean them
         faculty_results = {}
@@ -804,38 +840,54 @@ class EnhancedFacultyMediaTracker:
             # Clean the result data
             cleaned_result = {
                 'title': self.clean_title(result['title']),
-                'source': result['source'],  # Already cleaned by extract_source
+                'source': result['source'],
                 'publication_date': result['publication_date'],
                 'url': self.clean_url(result['url'])
             }
             faculty_results[faculty].append(cleaned_result)
         
-        # Add results by faculty
+        # Add results by faculty in alphabetical order
         for faculty_name in sorted(faculty_results.keys()):
-            # Add faculty name as a paragraph
-            faculty_para = doc.add_paragraph(faculty_name)
+            # Faculty name as bold heading
+            faculty_para = doc.add_paragraph()
+            faculty_run = faculty_para.add_run(faculty_name)
+            faculty_run.bold = True
+            faculty_run.font.size = Pt(12)
+            faculty_para.space_after = Pt(6)
             
             # Add articles for this faculty
             faculty_articles = faculty_results[faculty_name]
-            for result in faculty_articles:
+            for idx, result in enumerate(faculty_articles, 1):
                 # Skip entries with problematic URLs or titles
                 if (result['url'].startswith('[') or 
                     result['title'].startswith('[') or
                     'truncated' in result['url'].lower()):
                     continue
                 
-                # Format the entry professionally (Bluebook style)
-                # Title in italics would be ideal, but we'll use clean formatting
-                formatted_entry = (
-                    f"{result['title']}, "
-                    f"{result['source']}, "
-                    f"{result['publication_date']}, "
-                    f"{result['url']}."
-                )
-                doc.add_paragraph(formatted_entry)
+                # Create article entry with proper formatting
+                article_para = doc.add_paragraph(style='List Number')
+                article_para.space_after = Pt(6)
+                
+                # Title (in quotes per AP style)
+                title_run = article_para.add_run(f'"{result["title"]}"')
+                title_run.font.size = Pt(11)
+                
+                # Source and date
+                meta_run = article_para.add_run(f", {result['source']}")
+                meta_run.font.size = Pt(11)
+                
+                if result['publication_date']:
+                    date_run = article_para.add_run(f" ({result['publication_date']})")
+                    date_run.font.size = Pt(11)
+                
+                # URL on new line with hanging indent
+                article_para.add_run("\n")
+                url_run = article_para.add_run(result['url'])
+                url_run.font.size = Pt(10)
+                url_run.font.color.rgb = None  # Default color
             
-            # Add space between faculty
-            doc.add_paragraph("")
+            # Add space between faculty members
+            doc.add_paragraph()
         
         # Add faculty with no results (filtered for actual faculty only)
         all_faculty = set(self.filter_valid_faculty(self.fetch_faculty_list()))

@@ -1,194 +1,66 @@
-# CSSR_FacultyOpEds_AutomationTool
+# CSRR Faculty Media Tracker
 
-An automated system for tracking op-eds, print interviews, and television interviews by CSRR faculty affiliates. This tool uses Google Custom Search API to find recent media appearances and generates comprehensive reports.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/)
 
-## 🚀 Features
+An automation tool that finds and compiles the public scholarship of an entire faculty — op-eds, interviews, and media appearances — into clean Excel and Word reports. Built for the **Center for Security, Race and Rights (CSRR) at Rutgers Law School** to replace a manual, never-finished task with a repeatable pipeline.
 
-- **Comprehensive Search**: Uses Google Custom Search API for thorough web searching
-- **Strict Filtering**: Only returns legitimate news sources and recent content
-- **Date Validation**: Ensures all results are within specified date ranges
-- **Multiple Output Formats**: Generates both Excel and Word reports
-- **Professional Formatting**: Clean, organized document output
-- **Faculty Auto-Detection**: Automatically fetches current faculty list from CSRR website
-
-## 📋 Requirements
-
-- Python 3.7+
-- Google Custom Search API key
-- Google Custom Search Engine ID
-
-## 🛠️ Installation
-
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/azrabano23/ru_law-analysis-tool.git
-   cd ru_law-analysis-tool
-   ```
-
-2. **Install dependencies**:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. **Set up Google API credentials**:
-   - Get Google API key from [Google Cloud Console](https://console.cloud.google.com/)
-   - Create Custom Search Engine at [Google CSE](https://cse.google.com/)
-   - Set environment variables:
-     ```bash
-     export GOOGLE_API_KEY='your_api_key_here'
-     export GOOGLE_CSE_ID='your_cse_id_here'
-     ```
-
-## 🎯 Usage
-
-### Quick Start
-```bash
-python enhanced_faculty_media_tracker.py
-```
-
-### Quick Test (5 faculty members)
-```bash
-python enhanced_faculty_media_tracker.py --quick-test
-```
-
-### API Setup Help
-```bash
-python enhanced_faculty_media_tracker.py --setup-api
-```
-
-## ⚙️ Configuration
-
-Edit `config.yaml` to customize:
-
-```yaml
-search_period:
-  start_date: '2025-06-01'
-  end_date: '2025-08-19'
-
-output:
-  word_filename: 'CSRR_Faculty_Op-Eds_Jun2025_to_Aug2025.docx'
-  excel_filename: 'CSRR_Faculty_Media_Report.xlsx'
-  save_to_downloads: true
-  max_results_per_faculty: 15
-
-search:
-  use_google_api: true
-  use_basic_search: false
-  delay_between_searches: 5
-  max_results_per_query: 10
-```
-
-## 📊 Output
-
-### Excel Report
-- Comprehensive data with all article details
-- Includes URLs, publication dates, and search methods
-- Suitable for data analysis
-
-### Word Document
-- Clean, professional formatting
-- Organized by faculty member
-- Ready for presentation and sharing
-- Saved to Downloads folder by default
-
-## 🔍 Search Capabilities
-
-### Content Types Found
-- **Op-eds**: Opinion pieces and editorials
-- **Print Interviews**: Newspaper and magazine interviews
-- **Television Interviews**: TV news appearances
-- **Commentary**: Analysis and commentary pieces
-
-### Legitimate Sources
-- Major newspapers (NYT, Guardian, Washington Post)
-- News networks (CNN, MSNBC, Fox News, PBS)
-- International media (Al Jazeera, BBC, Reuters)
-- Legal publications (Law.com, Just Security)
-- Academic and policy outlets
-
-### Filtering
-- **Date validation**: Only content within specified range
-- **Source validation**: Only legitimate news outlets
-- **Content validation**: Only actual media appearances
-- **Excludes**: Social media, academic papers, generic pages
-
-## 📈 Performance
-
-### Recent Results (June 1 - August 19, 2025)
-- **Total Faculty**: 167 faculty members
-- **Faculty with Articles**: 29 faculty (17.4% success rate)
-- **Total Articles**: 48 articles
-- **Average per Faculty**: 1-3 articles (realistic for 2.5 months)
-
-### Search Quality
-- **High accuracy**: Only legitimate media appearances
-- **Recent content**: All articles within date range
-- **Relevant sources**: Major news outlets only
-- **No false positives**: Strict filtering eliminates irrelevant content
-
-## 🛡️ Error Handling
-
-- **Rate limiting**: Automatic delays between API calls
-- **Network errors**: Graceful handling of connection issues
-- **Invalid dates**: Filtered out automatically
-- **Missing data**: Handled with fallbacks
-
-## 📁 File Structure
-
-```
-ru_law-analysis-tool/
-├── enhanced_faculty_media_tracker.py  # Main application
-├── config.yaml                        # Configuration file
-├── requirements.txt                   # Python dependencies
-├── README.md                         # This file
-├── USAGE_GUIDE.md                    # Quick start guide
-├── setup.py                          # Installation script
-├── run_tracker.sh                    # Mac/Linux launcher
-├── run_tracker.bat                   # Windows launcher
-└── CSRR_Faculty_Op-Eds_Jun2025_to_Aug2025.docx  # Sample output
-```
-
-## 🔧 Troubleshooting
-
-### Common Issues
-
-1. **API Rate Limits**: 
-   - The system automatically handles rate limiting
-   - Consider upgrading to paid Google Cloud plan for higher quotas
-
-2. **No Results Found**:
-   - Check date range in config.yaml
-   - Verify API credentials are set correctly
-   - Ensure faculty members have recent media appearances
-
-3. **Permission Errors**:
-   - Ensure write permissions in output directory
-   - Check Downloads folder access
-
-## 💰 Cost Considerations
-
-- **Google Custom Search API**: $5 per 1,000 queries
-- **Estimated monthly cost**: $15-25 for comprehensive faculty tracking
-- **Free tier**: 100 queries/day (insufficient for full faculty list)
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
-
-## 📄 License
-
-This project is developed for CSRR (Center for Security, Race and Rights) at Rutgers University.
-
-## 📞 Support
-
-For questions or issues, please contact the CSRR team or create an issue in this repository.
+This is an engineering/automation project, not a machine-learning one — and it's framed that way on purpose: it solved a real operational problem for a real stakeholder, end to end.
 
 ---
 
-**Last Updated**: August 2025  
-**Version**: 2.0 (Enhanced with Google API)  
-**Status**: Production Ready
+## The problem
+
+A research center's influence lives partly in its faculty's public voice — the op-ed in a major paper, the cited interview, the podcast appearance. Tracking that across dozens of faculty and hundreds of outlets is exactly the kind of work that *should* be done regularly and almost never is, because doing it by hand is tedious and unbounded. CSRR needed an up-to-date, shareable record of its affiliates' media footprint for reporting, grant documentation, and communications — and needed it to be re-runnable, not a one-time spreadsheet that goes stale the next week.
+
+## Where this fits
+
+Media monitoring is a real, paid category — Cision and Meltwater sell enterprise contracts for roughly this capability at scale. The slice that's underserved is the *small institution* that has the same need (track our people's public work) without the budget or the appetite for an enterprise contract. A focused, self-hosted, free tool aimed at a known faculty list is a genuinely useful niche, and this is a working instance of it.
+
+## What it does
+
+```
+CSRR website ──scrape──▶ faculty list ──search──▶ per-person media hits
+                                                        │
+                                       dedupe + filter to legitimate sources
+                                                        │
+                                   ┌────────────────────┴────────────────────┐
+                                   ▼                                          ▼
+                          Excel workbook                          Word report (per faculty)
+```
+
+1. **Pulls the faculty roster** directly from the CSRR website (with a maintained fallback list if the site layout changes).
+2. **Searches each person's media footprint** across legitimate news and publication sources for op-eds, interviews, and appearances.
+3. **Deduplicates and filters** results to credible outlets, with polite rate-limiting so it behaves on the open web.
+4. **Generates two deliverables**: a structured Excel workbook (one row per appearance) and formatted Word reports — the formats the center actually circulates.
+
+## Technical breakdown (the core of the project)
+
+The engineering is the deliverable: a resilient, configurable scraper-and-reporter that a non-engineer can run.
+
+- **Web scraping & resilience** (`requests` + `BeautifulSoup`) — parses the live faculty directory, tolerates layout drift via a fallback roster, and rate-limits with jitter so it's a good web citizen rather than a hammer.
+- **Source discipline** — results are filtered to a curated set of legitimate publications and de-duplicated, because a media report is only useful if it's clean; noise and link-farm hits are actively excluded.
+- **Document generation** — `pandas` + `python-docx` turn raw hits into the two artifacts the center uses: an Excel workbook for analysis and per-faculty Word reports for circulation. The tool ends at "here is the file you email," not "here is some JSON."
+- **Operable by design** — a YAML config and an `argparse` CLI (including a 5-faculty quick-test mode) mean it's run by communications staff, not just its author. ~1,000 lines structured around that goal.
+
+**Skills demonstrated:** practical web scraping and HTML parsing; building for resilience against a third-party site you don't control; automated document/report generation; CLI and config design for non-technical users; and scoping a tool tightly to one stakeholder's real workflow.
+
+## Usage
+
+```bash
+pip install -r requirements.txt
+
+python enhanced_faculty_media_tracker.py                 # full run -> Excel + Word
+python enhanced_faculty_media_tracker.py --limit 5       # quick test on 5 faculty
+python enhanced_faculty_media_tracker.py --help          # all options
+```
+
+Search window, sources, and output paths are set in the YAML config.
+
+## Honest scope
+
+This is deliberate, well-built automation, not AI: the matching is search-and-filter, not a learned model. It's included because shipping a reliable tool that a real organization depends on is its own engineering skill — and a related scraper + dataset for the same effort lives in [`mediabot_rulaw`](https://github.com/azrabano23/mediabot_rulaw).
+
+## License
+
+MIT — see [LICENSE](LICENSE). Author: **Azra Bano**, for Rutgers Law CSRR.
